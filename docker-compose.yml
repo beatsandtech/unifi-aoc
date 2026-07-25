@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: aoc_backend
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./unifi_aoc.db:/app/unifi_aoc.db
+    restart: unless-stopped
+
+  connector:
+    build: ./connector
+    container_name: aoc_connector
+    env_file:
+      - .env
+    environment:
+      - AOC_API_URL=http://backend:8000/api
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: aoc_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api
+    depends_on:
+      - backend
+    restart: unless-stopped

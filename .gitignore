@@ -1,0 +1,25 @@
+# Environment Variables
+.env
+
+# Database
+*.db
+unifi_aoc.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+build/
+.DS_Store
+
+# Claude Code local session state (not project config)
+.claude/settings.local.json

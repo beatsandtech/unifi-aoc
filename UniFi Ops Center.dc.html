@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="nocturne.css">
+<style>
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--color-neutral-800);border-radius:8px}
+::-webkit-scrollbar-track{background:transparent}
+</style>
+</helmet>
+<div style="display:flex;height:100vh;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body);overflow:hidden">
+
+  <div style="width:236px;flex:none;display:flex;flex-direction:column;border-right:1px solid var(--color-divider);padding:var(--space-4);gap:var(--space-6);overflow-y:auto">
+    <div style="display:flex;align-items:center;gap:10px">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>
+      <div>
+        <div class="nav-brand" style="font-size:15px;line-height:1.1">UniFi Ops</div>
+        <div style="font-size:10px;color:var(--color-neutral-500);letter-spacing:.04em;text-transform:uppercase">Autonomous Ops Center</div>
+      </div>
+    </div>
+
+    <div class="seg" style="width:100%">
+      <label class="seg-opt" style="flex:1;justify-content:center"><input type="radio" name="role" onChange="{{ setRoleAdmin }}" checked="{{ isAdmin }}"/>Admin</label>
+      <label class="seg-opt" style="flex:1;justify-content:center"><input type="radio" name="role" onChange="{{ setRoleTech }}" checked="{{ isTech }}"/>Technician</label>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <button onClick="{{ goDashboard }}" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius-md);cursor:pointer;font-size:13px;border:none;text-align:left;width:100%;font-family:var(--font-body);color:{{ navDashColor }};background:{{ navDashBg }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>
+        <span style="flex:1;text-align:left">Dashboard</span>
+      </button>
+      <button onClick="{{ goSites }}" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius-md);cursor:pointer;font-size:13px;border:none;text-align:left;width:100%;font-family:var(--font-body);color:{{ navSitesColor }};background:{{ navSitesBg }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s7-7.5 7-12a7 7 0 1 0-14 0c0 4.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.4"/></svg>
+        <span style="flex:1;text-align:left">Site Explorer</span>
+      </button>
+      <button onClick="{{ goIncidents }}" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius-md);cursor:pointer;font-size:13px;border:none;text-align:left;width:100%;font-family:var(--font-body);color:{{ navIncidentsColor }};background:{{ navIncidentsBg }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg>
+        <span style="flex:1;text-align:left">Incident Center</span>
+        <sc-if value="{{ hasAwaiting }}"><span class="tag tag-accent" style="font-size:10px;padding:1px 6px">{{ awaitingBadge }}</span></sc-if>
+      </button>
+      <button onClick="{{ goRemediation }}" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius-md);cursor:pointer;font-size:13px;border:none;text-align:left;width:100%;font-family:var(--font-body);color:{{ navRemediationColor }};background:{{ navRemediationBg }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 1 5.4-5.4L14.7 6.3z"/></svg>
+        <span style="flex:1;text-align:left">Remediation Center</span>
+        <sc-if value="{{ hasActiveRuns }}"><span class="tag tag-neutral" style="font-size:10px;padding:1px 6px">{{ activeRunBadge }}</span></sc-if>
+      </button>
+      <button onClick="{{ goReports }}" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius-md);cursor:pointer;font-size:13px;border:none;text-align:left;width:100%;font-family:var(--font-body);color:{{ navReportsColor }};background:{{ navReportsBg }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
+        <span style="flex:1;text-align:left">Reports</span>
+      </button>
+    </div>
+
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:var(--space-2)">
+      <div class="hr" style="margin:0"></div>
+      <div style="font-size:11px;color:var(--color-neutral-500)">Signed in as</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--color-accent-800);color:var(--color-accent-100);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex:none">{{ userInitial }}</div>
+        <div>
+          <div style="font-size:13px">{{ userName }}</div>
+          <div style="font-size:11px;color:var(--color-neutral-500)">BiznTech MSP</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-6);border-bottom:1px solid var(--color-divider);flex:none">
+      <div style="font-size:18px;font-family:var(--font-heading)">{{ pageTitle }}</div>
+      <div style="font-size:13px;color:var(--color-neutral-500)">{{ breadcrumb }}</div>
+      <div style="margin-left:auto;font-size:12px;color:var(--color-neutral-500)">{{ roleLabel }}</div>
+    </div>
+
+    <div style="flex:1;overflow:auto;padding:var(--space-6)">
+
+      <sc-if value="{{ isDashboard }}">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:var(--space-3);margin-bottom:var(--space-6)">
+          <div class="card elev-sm">
+            <div class="card-kicker">Sites</div>
+            <div class="card-title" style="font-size:26px">{{ kpiSitesOnline }}<span style="font-size:13px;color:var(--color-neutral-500)"> / {{ kpiSitesTotal }} online</span></div>
+            <div class="card-meta">{{ kpiSitesDegraded }} degraded · {{ kpiSitesOffline }} offline</div>
+          </div>
+          <div class="card elev-sm">
+            <div class="card-kicker">Open Incidents</div>
+            <div class="card-title" style="font-size:26px">{{ kpiOpen }}</div>
+            <div class="card-meta">{{ kpiAwaiting }} awaiting approval</div>
+          </div>
+          <div class="card elev-sm">
+            <div class="card-kicker">Auto-Remediated</div>
+            <div class="card-title" style="font-size:26px">{{ kpiResolved }}</div>
+            <div class="card-meta">verified outcomes</div>
+          </div>
+          <div class="card elev-sm">
+            <div class="card-kicker">Mean Time to Detect</div>
+            <div class="card-title" style="font-size:26px">3m</div>
+            <div class="card-meta">across monitored sites</div>
+          </div>
+          <div class="card elev-sm">
+            <div class="card-kicker">Mean Time to Resolve</div>
+            <div class="card-title" style="font-size:26px">21m</div>
+            <div class="card-meta">approved remediations</div>
+          </div>
+          <div class="card elev-sm">
+            <div class="card-kicker">AI Remediation Success</div>
+            <div class="card-title" style="font-size:26px">91%</div>
+            <div class="card-meta">last 30 days</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:var(--space-4);align-items:start">
+          <div class="card elev-sm">
+            <div class="card-title">Active Incidents</div>
+            <div class="hr" style="margin:var(--space-2) 0"></div>
+            <sc-for list="{{ topIncidents }}" as="inc" hint-placeholder-count="5">
+              <div onClick="{{ inc.open }}" style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) 0;cursor:pointer;border-bottom:1px solid var(--color-divider)">
+                <span class="{{ inc.sevTagClass }}">{{ inc.severityLabel }}</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ inc.title }}</div>
+                  <div style="font-size:11px;color:var(--color-neutral-500)">{{ inc.customer }} · {{ inc.siteName }}</div>
+                </div>
+                <span class="{{ inc.statusTagClass }}">{{ inc.statusLabel }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:var(--space-4)">
+            <div class="card elev-sm">
+              <div class="card-title" style="font-size:15px">Device Health</div>
+              <div class="hr" style="margin:var(--space-2) 0"></div>
+              <sc-for list="{{ deviceHealth }}" as="row" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:6px">
+                  <div style="width:80px;font-size:12px;color:var(--color-neutral-400)">{{ row.label }}</div>
+                  <div style="flex:1;height:6px;border-radius:3px;background:var(--color-neutral-800);overflow:hidden"><div style="height:100%;width:{{ row.pct }}%;background:var(--color-accent)"></div></div>
+                  <div style="width:34px;text-align:right;font-size:11px;color:var(--color-neutral-500)">{{ row.pctLabel }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div class="card elev-sm">
+              <div class="card-title" style="font-size:15px">Highest-Risk Customers</div>
+              <div class="hr" style="margin:var(--space-2) 0"></div>
+              <sc-for list="{{ riskCustomers }}" as="rc" hint-placeholder-count="4">
+                <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0">
+                  <span>{{ rc.name }}</span><span style="color:var(--color-neutral-500)">{{ rc.count }} open</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isSites }}">
+        <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-4);align-items:center;flex-wrap:wrap">
+          <input class="input" style="max-width:220px" placeholder="Search sites…" value="{{ siteSearch }}" onChange="{{ onSiteSearch }}"/>
+          <select class="input" style="max-width:220px" value="{{ siteCustomerFilter }}" onChange="{{ onSiteCustomerFilter }}">
+            <option value="all">All customers</option>
+            <sc-for list="{{ customerOptions }}" as="c" hint-placeholder-count="8"><option value="{{ c }}">{{ c }}</option></sc-for>
+          </select>
+          <div class="seg">
+            <label class="seg-opt"><input type="radio" name="sitestatus" onChange="{{ onSiteStatusAll }}" checked="{{ siteStatusAllChecked }}"/>All</label>
+            <label class="seg-opt"><input type="radio" name="sitestatus" onChange="{{ onSiteStatusOnline }}" checked="{{ siteStatusOnlineChecked }}"/>Online</label>
+            <label class="seg-opt"><input type="radio" name="sitestatus" onChange="{{ onSiteStatusDegraded }}" checked="{{ siteStatusDegradedChecked }}"/>Degraded</label>
+            <label class="seg-opt"><input type="radio" name="sitestatus" onChange="{{ onSiteStatusOffline }}" checked="{{ siteStatusOfflineChecked }}"/>Offline</label>
+          </div>
+          <div style="margin-left:auto;font-size:12px;color:var(--color-neutral-500)">{{ filteredSitesCount }} sites</div>
+        </div>
+        <table class="table">
+          <thead><tr><th>Site</th><th>Customer</th><th>Status</th><th>Devices</th><th>Open Incidents</th><th>WAN Uptime</th><th>Last Sync</th></tr></thead>
+          <tbody>
+            <sc-for list="{{ filteredSites }}" as="s" hint-placeholder-count="8">
+              <tr onClick="{{ s.open }}" style="cursor:pointer">
+                <td>{{ s.name }}</td>
+                <td style="color:var(--color-neutral-400)">{{ s.customer }}</td>
+                <td><span class="{{ s.statusTagClass }}">{{ s.statusLabel }}</span></td>
+                <td>{{ s.devicesOnline }} / {{ s.devicesTotal }}</td>
+                <td>{{ s.openIncidentCount }}</td>
+                <td>{{ s.wanUptimePct }}%</td>
+                <td style="color:var(--color-neutral-500)">{{ s.lastSync }}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </sc-if>
+
+      <sc-if value="{{ isSiteDetail }}">
+        <sc-if value="{{ selectedSite }}">
+          <button class="btn btn-ghost" onClick="{{ goSites }}" style="margin-bottom:var(--space-3)">← Back to Site Explorer</button>
+          <div style="display:flex;align-items:center;gap:var(--space-3);margin-bottom:6px;flex-wrap:wrap">
+            <div style="font-size:22px;font-family:var(--font-heading)">{{ selectedSite.name }}</div>
+            <span class="{{ selectedSite.statusTagClass }}">{{ selectedSite.statusLabel }}</span>
+            <span class="tag tag-outline">{{ selectedSite.criticality }}</span>
+          </div>
+          <div style="color:var(--color-neutral-500);font-size:13px;margin-bottom:var(--space-4)">{{ selectedSite.customer }}</div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:var(--space-3);margin-bottom:var(--space-4)">
+            <div class="card elev-sm"><div class="card-kicker">WAN Latency</div><div class="card-title" style="font-size:22px">{{ selectedSite.wanLatencyMs }}ms</div></div>
+            <div class="card elev-sm"><div class="card-kicker">Packet Loss</div><div class="card-title" style="font-size:22px">{{ selectedSite.wanLossPct }}%</div></div>
+            <div class="card elev-sm"><div class="card-kicker">WAN Uptime</div><div class="card-title" style="font-size:22px">{{ selectedSite.wanUptimePct }}%</div></div>
+            <div class="card elev-sm"><div class="card-kicker">Devices Online</div><div class="card-title" style="font-size:22px">{{ selectedSite.devicesOnline }}/{{ selectedSite.devicesTotal }}</div></div>
+          </div>
+
+          <div class="card elev-sm" style="margin-bottom:var(--space-4)">
+            <div class="card-title" style="font-size:15px">Devices</div>
+            <div class="hr" style="margin:var(--space-2) 0"></div>
+            <table class="table">
+              <thead><tr><th>Device</th><th>Type</th><th>Model</th><th>Status</th><th>Firmware</th><th>Uptime</th></tr></thead>
+              <tbody>
+                <sc-for list="{{ selectedSite.deviceRows }}" as="d" hint-placeholder-count="6">
+                  <tr><td>{{ d.name }}</td><td style="text-transform:capitalize;color:var(--color-neutral-400)">{{ d.type }}</td><td>{{ d.model }}</td><td><span class="{{ d.statusTagClass }}">{{ d.statusLabel }}</span></td><td style="color:var(--color-neutral-500)">{{ d.firmware }}</td><td style="color:var(--color-neutral-500)">{{ d.uptimeDays }}d</td></tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card elev-sm">
+            <div class="card-title" style="font-size:15px">Incidents at this Site</div>
+            <div class="hr" style="margin:var(--space-2) 0"></div>
+            <sc-if value="{{ selectedSite.hasIncidents }}">
+              <sc-for list="{{ selectedSite.incidentRows }}" as="inc" hint-placeholder-count="3">
+                <div onClick="{{ inc.open }}" style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) 0;cursor:pointer;border-bottom:1px solid var(--color-divider)">
+                  <span class="{{ inc.sevTagClass }}">{{ inc.severityLabel }}</span>
+                  <div style="flex:1">{{ inc.title }}</div>
+                  <span class="{{ inc.statusTagClass }}">{{ inc.statusLabel }}</span>
+                </div>
+              </sc-for>
+            </sc-if>
+            <sc-if value="{{ selectedSite.noIncidents }}"><div style="font-size:13px;color:var(--color-neutral-500)">No open incidents at this site.</div></sc-if>
+          </div>
+        </sc-if>
+      </sc-if>
+
+      <sc-if value="{{ isIncidents }}">
+        <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-4);align-items:center;flex-wrap:wrap">
+          <input class="input" style="max-width:220px" placeholder="Search incidents…" value="{{ incSearch }}" onChange="{{ onIncSearch }}"/>
+          <div class="seg">
+            <label class="seg-opt"><input type="radio" name="sev" onChange="{{ onSevAll }}" checked="{{ sevAllChecked }}"/>All</label>
+            <label class="seg-opt"><input type="radio" name="sev" onChange="{{ onSevCritical }}" checked="{{ sevCriticalChecked }}"/>Critical</label>
+            <label class="seg-opt"><input type="radio" name="sev" onChange="{{ onSevWarning }}" checked="{{ sevWarningChecked }}"/>Warning</label>
+            <label class="seg-opt"><input type="radio" name="sev" onChange="{{ onSevInfo }}" checked="{{ sevInfoChecked }}"/>Info</label>
+          </div>
+          <select class="input" style="max-width:200px" value="{{ incStatusFilter }}" onChange="{{ onIncStatusFilter }}">
+            <option value="all">All statuses</option>
+            <option value="open">Open</option>
+            <option value="awaiting-approval">Awaiting approval</option>
+            <option value="running">Running</option>
+            <option value="verifying">Verifying</option>
+            <option value="resolved">Resolved</option>
+            <option value="escalated">Escalated</option>
+          </select>
+          <div style="margin-left:auto;font-size:12px;color:var(--color-neutral-500)">{{ filteredIncidentsCount }} incidents</div>
+        </div>
+        <table class="table">
+          <thead><tr><th>Severity</th><th>Incident</th><th>Customer / Site</th><th>Confidence</th><th>Safety</th><th>Status</th><th>Age</th></tr></thead>
+          <tbody>
+            <sc-for list="{{ filteredIncidents }}" as="inc" hint-placeholder-count="8">
+              <tr onClick="{{ inc.open }}" style="cursor:pointer">
+                <td><span class="{{ inc.sevTagClass }}">{{ inc.severityLabel }}</span></td>
+                <td>{{ inc.title }}</td>
+                <td style="color:var(--color-neutral-400)">{{ inc.customer }} · {{ inc.siteName }}</td>
+                <td>{{ inc.confidence }}%</td>
+                <td><span class="tag tag-outline">{{ inc.safetyLabelShort }}</span></td>
+                <td><span class="{{ inc.statusTagClass }}">{{ inc.statusLabel }}</span></td>
+                <td style="color:var(--color-neutral-500)">{{ inc.ageLabel }}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </sc-if>
+
+      <sc-if value="{{ isIncidentDetail }}">
+        <sc-if value="{{ selectedIncident }}">
+          <button class="btn btn-ghost" onClick="{{ goIncidents }}" style="margin-bottom:var(--space-3)">← Back to Incident Center</button>
+          <div style="display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;margin-bottom:6px">
+            <span class="{{ selectedIncident.sevTagClass }}">{{ selectedIncident.severityLabel }}</span>
+            <div style="font-size:20px;font-family:var(--font-heading)">{{ selectedIncident.title }}</div>
+            <span class="{{ selectedIncident.statusTagClass }}">{{ selectedIncident.statusLabel }}</span>
+          </div>
+          <div style="color:var(--color-neutral-500);font-size:13px;margin-bottom:var(--space-4)">{{ selectedIncident.customer }} · {{ selectedIncident.siteName }} · {{ selectedIncident.deviceName }} · detected {{ selectedIncident.detectedAt }}</div>
+
+          <div style="display:grid;grid-template-columns:1.7fr 1fr;gap:var(--space-4);align-items:start">
+            <div style="display:flex;flex-direction:column;gap:var(--space-4);min-width:0">
+              <div class="card elev-sm">
+                <div class="card-kicker">Evidence</div>
+                <sc-for list="{{ selectedIncident.evidence }}" as="e" hint-placeholder-count="4">
+                  <div style="font-size:13px;padding:3px 0;display:flex;gap:8px"><span style="color:var(--color-accent)">–</span><span>{{ e }}</span></div>
+                </sc-for>
+              </div>
+              <div class="card elev-sm">
+                <div class="card-kicker">AI Diagnosis</div>
+                <div style="font-size:14px;margin-bottom:var(--space-2)">{{ selectedIncident.rootCause }}</div>
+                <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--color-neutral-500)">
+                  <span>Confidence</span>
+                  <div style="flex:1;max-width:180px;height:6px;border-radius:3px;background:var(--color-neutral-800);overflow:hidden"><div style="height:100%;width:{{ selectedIncident.confidence }}%;background:var(--color-accent)"></div></div>
+                  <span>{{ selectedIncident.confidence }}%</span>
+                </div>
+              </div>
+              <div class="card elev-sm">
+                <div class="card-kicker">Recommended Remediation Plan</div>
+                <sc-for list="{{ selectedIncident.planRows }}" as="p" hint-placeholder-count="4">
+                  <div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--color-divider)">
+                    <div style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;flex:none;background:{{ p.markerBg }};color:{{ p.markerColor }};border:{{ p.markerBorder }}">{{ p.markerContent }}</div>
+                    <div style="font-size:13px;flex:1">{{ p.text }}</div>
+                  </div>
+                </sc-for>
+                <div style="display:flex;gap:var(--space-2);margin-top:var(--space-3)">
+                  <span class="tag tag-outline">Risk: {{ selectedIncident.risk }}</span>
+                  <span class="tag tag-outline">{{ selectedIncident.safetyLabel }}</span>
+                </div>
+              </div>
+
+              <div class="card elev-sm">
+                <div class="card-kicker">Remediation Run</div>
+                <sc-if value="{{ selectedIncident.showApprove }}">
+                  <div style="font-size:13px;color:var(--color-neutral-400);margin-bottom:var(--space-3)">{{ selectedIncident.safetyDesc }}</div>
+                  <sc-if value="{{ selectedIncident.canApprove }}">
+                    <div style="display:flex;gap:var(--space-2)">
+                      <button class="btn btn-primary" onClick="{{ selectedIncident.approve }}">Approve &amp; Run</button>
+                      <button class="btn btn-secondary" onClick="{{ selectedIncident.escalate }}">Escalate</button>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ selectedIncident.cannotApprove }}">
+                    <div style="font-size:13px;color:var(--color-neutral-500);margin-bottom:var(--space-2)">Requires MSP Administrator approval.</div>
+                    <button class="btn btn-secondary" onClick="{{ selectedIncident.escalate }}">Escalate</button>
+                  </sc-if>
+                </sc-if>
+                <sc-if value="{{ selectedIncident.showRunSteps }}">
+                  <sc-for list="{{ selectedIncident.runStepRows }}" as="rs" hint-placeholder-count="4">
+                    <div style="display:flex;align-items:center;gap:10px;padding:5px 0;font-size:13px">
+                      <div style="width:8px;height:8px;border-radius:50%;flex:none;background:{{ rs.dotBg }}"></div>
+                      <div style="color:{{ rs.textColor }}">{{ rs.label }}</div>
+                    </div>
+                  </sc-for>
+                </sc-if>
+                <sc-if value="{{ selectedIncident.showVerify }}">
+                  <div class="hr" style="margin:var(--space-3) 0"></div>
+                  <div class="card-kicker" style="margin-bottom:6px">Verification</div>
+                  <sc-for list="{{ selectedIncident.verify }}" as="v" hint-placeholder-count="3">
+                    <div style="font-size:13px;padding:3px 0;display:flex;gap:8px"><span style="color:var(--color-accent)">✓</span><span>{{ v }}</span></div>
+                  </sc-for>
+                </sc-if>
+                <sc-if value="{{ selectedIncident.showFinal }}">
+                  <div class="hr" style="margin:var(--space-3) 0"></div>
+                  <div style="font-size:13px">{{ selectedIncident.finalNote }}</div>
+                </sc-if>
+              </div>
+
+              <div class="card elev-sm">
+                <div class="card-kicker">Audit Trail</div>
+                <sc-for list="{{ selectedIncident.auditRows }}" as="a" hint-placeholder-count="2">
+                  <div style="display:flex;gap:10px;font-size:12px;padding:3px 0;color:var(--color-neutral-500)">
+                    <div style="width:70px;flex:none">{{ a.at }}</div>
+                    <div style="width:140px;flex:none;color:var(--color-neutral-300)">{{ a.actor }}</div>
+                    <div>{{ a.action }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:var(--space-4)">
+              <div class="card elev-sm">
+                <div class="card-kicker">Details</div>
+                <div style="font-size:13px;display:flex;flex-direction:column;gap:6px">
+                  <div><span style="color:var(--color-neutral-500)">Category</span> — {{ selectedIncident.category }}</div>
+                  <div><span style="color:var(--color-neutral-500)">Device</span> — {{ selectedIncident.deviceName }}</div>
+                  <div><span style="color:var(--color-neutral-500)">Customer</span> — {{ selectedIncident.customer }}</div>
+                  <div><span style="color:var(--color-neutral-500)">Site</span> — {{ selectedIncident.siteName }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+      </sc-if>
+
+      <sc-if value="{{ isRemediation }}">
+        <div style="display:flex;gap:var(--space-3);overflow-x:auto;padding-bottom:var(--space-2)">
+          <sc-for list="{{ remediationColumns }}" as="col" hint-placeholder-count="6">
+            <div style="flex:none;width:230px;display:flex;flex-direction:column;gap:var(--space-2)">
+              <div style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-neutral-500);display:flex;justify-content:space-between">
+                <span>{{ col.label }}</span><span>{{ col.count }}</span>
+              </div>
+              <sc-for list="{{ col.items }}" as="inc" hint-placeholder-count="2">
+                <div class="card elev-sm" onClick="{{ inc.open }}" style="cursor:pointer;padding:var(--space-2)">
+                  <div style="font-size:12px;color:var(--color-neutral-500);margin-bottom:2px">{{ inc.customer }}</div>
+                  <div style="font-size:13px">{{ inc.title }}</div>
+                  <div style="margin-top:6px"><span class="{{ inc.sevTagClass }}">{{ inc.severityLabel }}</span></div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isReports }}">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--space-4)">
+          <div class="card elev-sm">
+            <div class="card-title" style="font-size:15px">Site Uptime</div>
+            <div class="hr" style="margin:var(--space-2) 0"></div>
+            <sc-for list="{{ uptimeRows }}" as="r" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <div style="width:120px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.label }}</div>
+                <div style="flex:1;height:6px;border-radius:3px;background:var(--color-neutral-800)"><div style="height:100%;width:{{ r.pct }}%;background:var(--color-accent)"></div></div>
+                <div style="width:44px;text-align:right;font-size:11px;color:var(--color-neutral-500)">{{ r.pct }}%</div>
+              </div>
+            </sc-for>
+          </div>
+          <div class="card elev-sm">
+            <div class="card-title" style="font-size:15px">Firmware Compliance</div>
+            <div class="hr" style="margin:var(--space-2) 0"></div>
+            <div class="card-title" style="font-size:32px">{{ firmwareCompliancePct }}%</div>
+            <div class="card-body">devices on current firmware</div>
+          </div>
+          <div class="card elev-sm">
+            <div class="card-title" style="font-size:15px">Remediation Effectiveness</div>
+            <div class="hr" style="margin:var(--space-2) 0"></div>
+            <div style="font-size:13px;margin-bottom:6px">{{ resolvedCount }} resolved · {{ escalatedCount }} escalated</div>
+            <div style="height:8px;border-radius:4px;overflow:hidden;display:flex">
+              <div style="width:{{ resolvedSharePct }}%;background:var(--color-accent)"></div>
+              <div style="width:{{ escalatedSharePct }}%;background:var(--color-neutral-700)"></div>
+            </div>
+          </div>
+          <div class="card elev-sm">
+            <div class="card-title" style="font-size:15px">Most Common Problems</div>
+            <div class="hr" style="margin:var(--space-2) 0"></div>
+            <sc-for list="{{ commonProblems }}" as="p" hint-placeholder-count="5">
+              <div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0"><span>{{ p.label }}</span><span style="color:var(--color-neutral-500)">{{ p.count }}</span></div>
+            </sc-for>
+          </div>
+          <div class="card elev-sm">
+            <div class="card-title" style="font-size:15px">Technician Hours Saved</div>
+            <div class="hr" style="margin:var(--space-2) 0"></div>
+            <div class="card-title" style="font-size:32px">{{ hoursSaved }}h</div>
+            <div class="card-body">estimated this month across all sites</div>
+          </div>
+        </div>
+      </sc-if>
+
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    role: 'admin', view: 'dashboard', selectedSiteId: null, selectedIncidentId: null,
+    sites: [], incidents: [], loaded: false,
+    siteSearch: '', siteCustomerFilter: 'all', siteStatusFilter: 'all',
+    incSearch: '', incSeverityFilter: 'all', incStatusFilter: 'all',
+  };
+
+  componentDidMount() {
+    import('./data.js').then((mod) => {
+      this.SAFETY_LEVELS = mod.SAFETY_LEVELS;
+      this.setState({ sites: mod.SITES, incidents: mod.INCIDENTS, loaded: true });
+    });
+  }
+
+  sevClass(sev) { return sev === 'critical' ? 'tag tag-accent' : sev === 'warning' ? 'tag tag-outline' : 'tag tag-neutral'; }
+  sevLabel(sev) { return sev === 'critical' ? 'Critical' : sev === 'warning' ? 'Warning' : 'Info'; }
+  statusLabelOf(s) {
+    return { open: 'Open', 'awaiting-approval': 'Awaiting Approval', running: 'Running', verifying: 'Verifying', resolved: 'Resolved', escalated: 'Escalated' }[s] || s;
+  }
+  statusClass(s) {
+    if (s === 'resolved') return 'tag tag-accent';
+    if (s === 'awaiting-approval' || s === 'escalated') return 'tag tag-outline';
+    return 'tag tag-neutral';
+  }
+  siteStatusClass(s) { return s === 'online' ? 'tag tag-accent' : s === 'degraded' ? 'tag tag-outline' : 'tag tag-neutral'; }
+  siteStatusLabel(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+  goDashboard = () => this.setState({ view: 'dashboard' });
+  goSites = () => this.setState({ view: 'sites', selectedSiteId: null });
+  goIncidents = () => this.setState({ view: 'incidents', selectedIncidentId: null });
+  goRemediation = () => this.setState({ view: 'remediation' });
+  goReports = () => this.setState({ view: 'reports' });
+  selectSite = (id) => this.setState({ view: 'siteDetail', selectedSiteId: id });
+  selectIncident = (id) => this.setState({ view: 'incidentDetail', selectedIncidentId: id });
+  setRoleAdmin = () => this.setState({ role: 'admin' });
+  setRoleTech = () => this.setState({ role: 'tech' });
+
+  onSiteSearch = (e) => this.setState({ siteSearch: e.target.value });
+  onSiteCustomerFilter = (e) => this.setState({ siteCustomerFilter: e.target.value });
+  onSiteStatusAll = () => this.setState({ siteStatusFilter: 'all' });
+  onSiteStatusOnline = () => this.setState({ siteStatusFilter: 'online' });
+  onSiteStatusDegraded = () => this.setState({ siteStatusFilter: 'degraded' });
+  onSiteStatusOffline = () => this.setState({ siteStatusFilter: 'offline' });
+
+  onIncSearch = (e) => this.setState({ incSearch: e.target.value });
+  onIncStatusFilter = (e) => this.setState({ incStatusFilter: e.target.value });
+  onSevAll = () => this.setState({ incSeverityFilter: 'all' });
+  onSevCritical = () => this.setState({ incSeverityFilter: 'critical' });
+  onSevWarning = () => this.setState({ incSeverityFilter: 'warning' });
+  onSevInfo = () => this.setState({ incSeverityFilter: 'info' });
+
+  approve = (id) => {
+    const inc = this.state.incidents.find((i) => i.id === id);
+    if (!inc) return;
+    if (inc.safetyLevel >= 4 && this.state.role !== 'admin') return;
+    const actor = this.state.role === 'admin' ? 'MSP Administrator' : 'Helpdesk Technician';
+    this.setState((s) => ({
+      incidents: s.incidents.map((i) => i.id === id ? {
+        ...i, status: 'running', run: { stepIndex: 0, verified: false },
+        audit: [...i.audit, { actor, action: 'Approved remediation plan', at: 'just now' }, { actor: 'Execution Agent', action: 'Remediation started', at: 'just now' }],
+      } : i),
+    }));
+    this.stepRemediation(id, 0);
+  };
+
+  stepRemediation = (id, step) => {
+    const inc = this.state.incidents.find((i) => i.id === id);
+    if (!inc) return;
+    const total = inc.plan.length;
+    setTimeout(() => {
+      this.setState((s) => ({
+        incidents: s.incidents.map((i) => {
+          if (i.id !== id) return i;
+          if (step + 1 < total) {
+            return { ...i, run: { ...i.run, stepIndex: step + 1 }, audit: [...i.audit, { actor: 'Execution Agent', action: 'Step complete: ' + i.plan[step], at: 'just now' }] };
+          }
+          return { ...i, status: 'verifying', run: { ...i.run, stepIndex: total }, audit: [...i.audit, { actor: 'Execution Agent', action: 'All steps complete — verifying', at: 'just now' }] };
+        }),
+      }));
+      if (step + 1 < total) this.stepRemediation(id, step + 1);
+      else this.finishVerification(id);
+    }, 1100);
+  };
+
+  finishVerification = (id) => {
+    setTimeout(() => {
+      this.setState((s) => ({
+        incidents: s.incidents.map((i) => {
+          if (i.id !== id) return i;
+          const escalate = /scalat/i.test(i.finalNote);
+          return {
+            ...i, status: escalate ? 'escalated' : 'resolved', run: { ...i.run, verified: true },
+            audit: [...i.audit, { actor: 'Verification Agent', action: escalate ? 'Verification inconclusive — escalated to technician' : 'Verification passed — incident resolved', at: 'just now' }],
+          };
+        }),
+      }));
+    }, 1300);
+  };
+
+  escalateNow = (id) => {
+    const actor = this.state.role === 'admin' ? 'MSP Administrator' : 'Helpdesk Technician';
+    this.setState((s) => ({ incidents: s.incidents.map((i) => i.id === id ? { ...i, status: 'escalated', audit: [...i.audit, { actor, action: 'Manually escalated', at: 'just now' }] } : i) }));
+  };
+
+  formatIncident(inc) {
+    const stepIndex = inc.run ? inc.run.stepIndex : ((inc.status === 'resolved' || inc.status === 'escalated') ? inc.plan.length : 0);
+    const planRows = inc.plan.map((text, i) => {
+      const done = i < stepIndex;
+      return {
+        text, markerContent: done ? '✓' : String(i + 1),
+        markerBg: done ? 'var(--color-accent-800)' : 'transparent',
+        markerColor: done ? 'var(--color-accent-100)' : 'var(--color-neutral-500)',
+        markerBorder: done ? 'none' : '1px solid var(--color-divider)',
+      };
+    });
+    const runStepRows = inc.plan.map((text, i) => {
+      const st = i < stepIndex ? 'done' : (i === stepIndex && inc.status === 'running') ? 'current' : 'pending';
+      return {
+        label: text,
+        dotBg: st === 'done' ? 'var(--color-accent)' : st === 'current' ? 'var(--color-accent-400)' : 'var(--color-neutral-700)',
+        textColor: st === 'pending' ? 'var(--color-neutral-500)' : 'var(--color-text)',
+      };
+    });
+    const canApprove = !(inc.safetyLevel >= 4 && this.state.role !== 'admin');
+    return {
+      ...inc, severityLabel: this.sevLabel(inc.severity), sevTagClass: this.sevClass(inc.severity),
+      statusLabel: this.statusLabelOf(inc.status), statusTagClass: this.statusClass(inc.status),
+      safetyLabel: this.SAFETY_LEVELS ? this.SAFETY_LEVELS[inc.safetyLevel].label : '',
+      safetyLabelShort: 'L' + inc.safetyLevel, safetyDesc: this.SAFETY_LEVELS ? this.SAFETY_LEVELS[inc.safetyLevel].desc : '',
+      ageLabel: inc.ageMin < 60 ? inc.ageMin + 'm' : Math.round(inc.ageMin / 60) + 'h',
+      planRows, runStepRows,
+      showApprove: inc.status === 'awaiting-approval', canApprove, cannotApprove: !canApprove,
+      showRunSteps: inc.status !== 'awaiting-approval' && inc.status !== 'open',
+      showVerify: inc.status === 'verifying' || inc.status === 'resolved' || inc.status === 'escalated',
+      showFinal: inc.status === 'resolved' || inc.status === 'escalated',
+      auditRows: inc.audit,
+      open: () => this.selectIncident(inc.id), approve: () => this.approve(inc.id), escalate: () => this.escalateNow(inc.id),
+    };
+  }
+
+  renderVals() {
+    const { role, view, sites, incidents, selectedSiteId, selectedIncidentId,
+      siteSearch, siteCustomerFilter, siteStatusFilter, incSearch, incSeverityFilter, incStatusFilter } = this.state;
+    const isAdmin = role === 'admin';
+
+    const navColor = (active) => active ? 'var(--color-accent)' : 'var(--color-text)';
+    const navBg = (active) => active ? 'var(--color-accent-900)' : 'transparent';
+
+    const awaitingCount = incidents.filter((i) => i.status === 'awaiting-approval').length;
+    const activeRunCount = incidents.filter((i) => i.status === 'running' || i.status === 'verifying').length;
+
+    const titles = { dashboard: 'Global Operations Dashboard', sites: 'Site Explorer', siteDetail: 'Site Detail', incidents: 'Incident Center', incidentDetail: 'Incident Detail', remediation: 'Remediation Center', reports: 'Reports' };
+
+    const enrichedIncidents = incidents.map((i) => this.formatIncident(i));
+    const incidentById = {};
+    enrichedIncidents.forEach((i) => { incidentById[i.id] = i; });
+
+    const enrichedSites = sites.map((s) => {
+      const siteIncidents = enrichedIncidents.filter((i) => i.siteId === s.id);
+      const openIncidentCount = siteIncidents.filter((i) => i.status !== 'resolved').length;
+      return {
+        ...s, statusLabel: this.siteStatusLabel(s.status), statusTagClass: this.siteStatusClass(s.status),
+        openIncidentCount, open: () => this.selectSite(s.id),
+        deviceRows: s.devices.map((d) => ({ ...d, statusLabel: this.siteStatusLabel(d.status), statusTagClass: this.siteStatusClass(d.status) })),
+        incidentRows: siteIncidents, hasIncidents: siteIncidents.length > 0, noIncidents: siteIncidents.length === 0,
+      };
+    });
+
+    const customerOptions = Array.from(new Set(sites.map((s) => s.customer)));
+
+    const filteredSites = enrichedSites.filter((s) =>
+      (siteCustomerFilter === 'all' || s.customer === siteCustomerFilter) &&
+      (siteStatusFilter === 'all' || s.status === siteStatusFilter) &&
+      (siteSearch === '' || (s.name + ' ' + s.customer).toLowerCase().includes(siteSearch.toLowerCase())));
+
+    const filteredIncidents = enrichedIncidents.filter((i) =>
+      (incSeverityFilter === 'all' || i.severity === incSeverityFilter) &&
+      (incStatusFilter === 'all' || i.status === incStatusFilter) &&
+      (incSearch === '' || (i.title + ' ' + i.customer).toLowerCase().includes(incSearch.toLowerCase())));
+
+    const topIncidents = enrichedIncidents.filter((i) => i.status !== 'resolved')
+      .sort((a, b) => (a.severity === 'critical' ? 0 : a.severity === 'warning' ? 1 : 2) - (b.severity === 'critical' ? 0 : b.severity === 'warning' ? 1 : 2))
+      .slice(0, 6);
+
+    const allDevices = sites.flatMap((s) => s.devices);
+    const deviceHealth = ['ap', 'switch', 'gateway', 'console'].map((type) => {
+      const list = allDevices.filter((d) => d.type === type);
+      const online = list.filter((d) => d.status === 'online').length;
+      const pct = list.length ? Math.round((online / list.length) * 100) : 100;
+      const labelMap = { ap: 'Access Points', switch: 'Switches', gateway: 'Gateways', console: 'Consoles' };
+      return { label: labelMap[type], pct, pctLabel: pct + '%' };
+    });
+
+    const riskCounts = {};
+    enrichedIncidents.forEach((i) => { if (i.status !== 'resolved') riskCounts[i.customer] = (riskCounts[i.customer] || 0) + 1; });
+    const riskCustomers = Object.entries(riskCounts).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, count]) => ({ name, count }));
+
+    const kOnline = sites.filter((s) => s.status === 'online').length;
+    const kDegraded = sites.filter((s) => s.status === 'degraded').length;
+    const kOffline = sites.filter((s) => s.status === 'offline').length;
+    const kOpen = incidents.filter((i) => i.status !== 'resolved').length;
+    const kResolved = incidents.filter((i) => i.status === 'resolved').length;
+
+    const selectedSite = enrichedSites.find((s) => s.id === selectedSiteId) || null;
+    const selectedIncident = incidentById[selectedIncidentId] || null;
+
+    const remediationColumns = ['open', 'awaiting-approval', 'running', 'verifying', 'resolved', 'escalated'].map((st) => {
+      const items = enrichedIncidents.filter((i) => i.status === st);
+      return { label: this.statusLabelOf(st), count: items.length, items };
+    });
+
+    const uptimeRows = enrichedSites.slice(0, 8).map((s) => ({ label: s.name + ' — ' + s.customer.split(' ')[0], pct: s.wanUptimePct }));
+    const firmwareCompliancePct = allDevices.length ? Math.round((allDevices.filter((d) => d.firmware.startsWith('7.2') || d.firmware.startsWith('4.2')).length / allDevices.length) * 100) : 0;
+    const resolvedCount = incidents.filter((i) => i.status === 'resolved').length;
+    const escalatedCount = incidents.filter((i) => i.status === 'escalated').length;
+    const totalRE = resolvedCount + escalatedCount || 1;
+    const problemCounts = {};
+    incidents.forEach((i) => { problemCounts[i.category] = (problemCounts[i.category] || 0) + 1; });
+    const commonProblems = Object.entries(problemCounts).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([label, count]) => ({ label, count }));
+
+    return {
+      isAdmin, isTech: !isAdmin, setRoleAdmin: this.setRoleAdmin, setRoleTech: this.setRoleTech,
+      goDashboard: this.goDashboard, goSites: this.goSites, goIncidents: this.goIncidents, goRemediation: this.goRemediation, goReports: this.goReports,
+      navDashColor: navColor(view === 'dashboard'), navDashBg: navBg(view === 'dashboard'),
+      navSitesColor: navColor(view === 'sites' || view === 'siteDetail'), navSitesBg: navBg(view === 'sites' || view === 'siteDetail'),
+      navIncidentsColor: navColor(view === 'incidents' || view === 'incidentDetail'), navIncidentsBg: navBg(view === 'incidents' || view === 'incidentDetail'),
+      navRemediationColor: navColor(view === 'remediation'), navRemediationBg: navBg(view === 'remediation'),
+      navReportsColor: navColor(view === 'reports'), navReportsBg: navBg(view === 'reports'),
+      hasAwaiting: awaitingCount > 0, awaitingBadge: String(awaitingCount), hasActiveRuns: activeRunCount > 0, activeRunBadge: String(activeRunCount),
+      userInitial: isAdmin ? 'A' : 'T', userName: isAdmin ? 'MSP Administrator' : 'Helpdesk Technician', roleLabel: isAdmin ? 'MSP Administrator' : 'Helpdesk Technician',
+      pageTitle: titles[view] || '', breadcrumb: view === 'siteDetail' && selectedSite ? 'Site Explorer / ' + selectedSite.customer : (view === 'incidentDetail' && selectedIncident ? 'Incident Center / ' + selectedIncident.category : ''),
+      isDashboard: view === 'dashboard', isSites: view === 'sites', isSiteDetail: view === 'siteDetail', isIncidents: view === 'incidents', isIncidentDetail: view === 'incidentDetail', isRemediation: view === 'remediation', isReports: view === 'reports',
+      kpiSitesOnline: kOnline, kpiSitesTotal: sites.length, kpiSitesDegraded: kDegraded, kpiSitesOffline: kOffline,
+      kpiOpen: kOpen, kpiAwaiting: awaitingCount, kpiResolved: kResolved,
+      topIncidents, deviceHealth, riskCustomers,
+      siteSearch, siteCustomerFilter, siteStatusFilter, onSiteSearch: this.onSiteSearch, onSiteCustomerFilter: this.onSiteCustomerFilter,
+      onSiteStatusAll: this.onSiteStatusAll, onSiteStatusOnline: this.onSiteStatusOnline, onSiteStatusDegraded: this.onSiteStatusDegraded, onSiteStatusOffline: this.onSiteStatusOffline,
+      siteStatusAllChecked: siteStatusFilter === 'all', siteStatusOnlineChecked: siteStatusFilter === 'online', siteStatusDegradedChecked: siteStatusFilter === 'degraded', siteStatusOfflineChecked: siteStatusFilter === 'offline',
+      customerOptions, filteredSites, filteredSitesCount: filteredSites.length,
+      selectedSite,
+      incSearch, incStatusFilter, onIncSearch: this.onIncSearch, onIncStatusFilter: this.onIncStatusFilter,
+      onSevAll: this.onSevAll, onSevCritical: this.onSevCritical, onSevWarning: this.onSevWarning, onSevInfo: this.onSevInfo,
+      sevAllChecked: incSeverityFilter === 'all', sevCriticalChecked: incSeverityFilter === 'critical', sevWarningChecked: incSeverityFilter === 'warning', sevInfoChecked: incSeverityFilter === 'info',
+      filteredIncidents, filteredIncidentsCount: filteredIncidents.length,
+      selectedIncident,
+      remediationColumns,
+      uptimeRows, firmwareCompliancePct, resolvedCount, escalatedCount,
+      resolvedSharePct: Math.round((resolvedCount / totalRE) * 100), escalatedSharePct: Math.round((escalatedCount / totalRE) * 100),
+      commonProblems, hoursSaved: 38,
+    };
+  }
+}
+
+</script>
+</body>
+</html>

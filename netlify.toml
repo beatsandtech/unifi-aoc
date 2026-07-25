@@ -1,0 +1,12 @@
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# NEXT_PUBLIC_API_URL must also be set in the Netlify dashboard
+# (Site configuration -> Environment variables) to your Render backend URL —
+# Next.js inlines NEXT_PUBLIC_* vars at build time, so this file alone
+# cannot supply the value, only document it.
