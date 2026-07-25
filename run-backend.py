@@ -13,6 +13,12 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 os.environ['PYTHONUNBUFFERED'] = '1'
 
+# Load a local .env file (e.g. UI_CLOUD_API_KEY) before main.py/agents.py read
+# os.environ — a no-op if .env doesn't exist, and on Render the platform sets
+# real env vars directly so this has nothing to load.
+from dotenv import load_dotenv
+load_dotenv()
+
 try:
     print("=" * 60)
     print("UniFi Autonomous Operations Center - Backend Startup")
