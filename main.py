@@ -810,19 +810,21 @@ def sync_telemetry(payload: SyncPayload, db: Session = Depends(get_db)):
 
     org_id = org.id
 
-    # Upsert Sites using merge() — idempotent regardless of session pending state
+    # Upsert Sites — preserve an existing site's derived status (e.g. Degraded
+    # from an open incident) instead of stomping it back to Online every 15s
+    # cycle. Only a brand-new site defaults to Online; status is recomputed
+    # from real device/incident state below regardless.
     active_site_ids = set()
+    existing_site_ids = {row[0] for row in db.query(Site.id).all()}
     for s in payload.sites:
         site_id = s.get("id")
         if not site_id:
             continue
         active_site_ids.add(site_id)
-        db.merge(Site(
-            id=site_id,
-            name=s.get("name", "Unknown Site"),
-            status="Online",
-            timezone="UTC"
-        ))
+        if site_id in existing_site_ids:
+            db.merge(Site(id=site_id, name=s.get("name", "Unknown Site"), timezone="UTC"))
+        else:
+            db.merge(Site(id=site_id, name=s.get("name", "Unknown Site"), status="Online", timezone="UTC"))
 
     db.flush()  # Commit sites to session so device FKs resolve
 
@@ -835,6 +837,16 @@ def sync_telemetry(payload: SyncPayload, db: Session = Depends(get_db)):
                 db.delete(dev)
     db.flush()
 
+    # Snapshot status before upserting so we can detect Online->Offline
+    # transitions below. This is the live-monitoring signal for real devices:
+    # nothing else watches device health without syslog forwarding configured
+    # (see /api/connector/syslog), which needs a reachable UDP endpoint this
+    # deployment may not have.
+    prior_status = {mac.upper(): status for mac, status in db.query(Device.mac, Device.status).all()}
+
+    correlation_agent = IncidentCorrelationAgent(db)
+    newly_offline = []  # (device_id, site_id) needing an incident after upsert
+
     # Upsert Devices — full field refresh via merge()
     for d in payload.devices:
         mac = d.get("mac", "")
@@ -842,21 +854,75 @@ def sync_telemetry(payload: SyncPayload, db: Session = Depends(get_db)):
             continue
         model = d.get("model", "Unknown")
         name = d.get("name") or f"{model} ({mac})"
+        device_id = f"dev_{mac.replace(':','').replace('-','').lower()}"
+        new_status = d.get("status", "Online")
         db.merge(Device(
-            id=f"dev_{mac.replace(':','').replace('-','').lower()}",
+            id=device_id,
             site_id=d.get("site_id"),
             mac=mac,
             name=name,
             model=model,
             type=d.get("type") or "gateway",
-            status=d.get("status", "Online"),
+            status=new_status,
             ip_address=d.get("ip", "") or "",
             firmware=d.get("firmware", "") or "",
             last_seen=datetime.datetime.utcnow()
         ))
+        # Fires on a true Online->Offline flip AND on first-ever sight of an
+        # already-offline device (prior_status.get returns None) — either way
+        # it's real, unreported device trouble worth surfacing.
+        if new_status != "Online" and prior_status.get(mac.upper()) != new_status:
+            newly_offline.append((device_id, d.get("site_id")))
+
+    db.flush()
+
+    # Raise one incident per newly-offline device, skipping devices that
+    # already have an open incident so a stuck device doesn't re-raise every
+    # 15s poll cycle.
+    device_type_to_event = {
+        "gateway": "gateway_wan_outage",
+        "switch": "switch_port_flap",
+    }
+    for device_id, site_id in newly_offline:
+        if not site_id:
+            continue
+        already_open = db.query(Incident).filter(
+            Incident.device_id == device_id,
+            Incident.status.notin_(["Resolved"]),
+        ).first()
+        if already_open:
+            continue
+        device = db.query(Device).filter(Device.id == device_id).first()
+        if not device:
+            continue
+        event_key = device_type_to_event.get(device.type, "ap_disconnected")
+        correlation_agent.correlate_events(
+            site_id,
+            [{"event": event_key, "message": f"{device.name} ({device.mac}) went offline — no heartbeat from UniFi Cloud."}],
+            device_id=device_id,
+        )
+
+    # Recompute every synced site's status from real device/incident state —
+    # covers both new incidents just raised above and devices that recovered.
+    for site_id in active_site_ids:
+        site = db.query(Site).filter(Site.id == site_id).first()
+        if not site:
+            continue
+        still_open = db.query(Incident).filter(
+            Incident.site_id == site_id, Incident.status.notin_(["Resolved"])
+        ).count()
+        offline_devices = db.query(Device).filter(
+            Device.site_id == site_id, Device.status != "Online"
+        ).count()
+        site.status = "Online" if still_open == 0 and offline_devices == 0 else "Degraded"
 
     db.commit()
-    return {"status": "success", "synced_sites": len(payload.sites), "synced_devices": len(payload.devices)}
+    return {
+        "status": "success",
+        "synced_sites": len(payload.sites),
+        "synced_devices": len(payload.devices),
+        "new_incidents": len(newly_offline),
+    }
 
 
 @app.post("/api/connector/reset")
