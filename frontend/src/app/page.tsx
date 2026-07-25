@@ -110,8 +110,6 @@ export default function Home() {
     if (!token) return;
     if (!opts.silent) setLoading(true);
     try {
-      await fetch(`${API_BASE}/api/seed`, { method: "POST", headers: getHeaders() }).catch(() => {});
-
       const [dash, siteList, incidentList, reportData] = await Promise.all([
         fetch(`${API_BASE}/api/dashboard`, { headers: getHeaders() }),
         fetch(`${API_BASE}/api/sites`, { headers: getHeaders() }),

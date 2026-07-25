@@ -776,10 +776,16 @@ def ingest_syslog(payload: Dict[str, str], db: Session = Depends(get_db)):
         events.append({"event": "gateway_wan_outage", "message": f"Syslog from {ip}: {payload.get('message')}"})
         
     if events:
-        # Default incoming syslogs to the Acme site for correlation tests
-        incident = correlation_agent.correlate_events("site_acme_hq", events)
+        # Resolve the real site from whichever device sent this syslog message —
+        # a synced device's IP is the only identifying field a raw syslog packet
+        # carries back to us.
+        sender = db.query(Device).filter(Device.ip_address == ip).first()
+        if not sender:
+            return {"status": "ignored", "reason": f"No synced device found for sender IP {ip}."}
+
+        incident = correlation_agent.correlate_events(sender.site_id, events, device_id=sender.id)
         return {"status": "event_correlated", "incident_id": incident.id}
-        
+
     return {"status": "ignored", "reason": "No matched operational signatures."}
 
 class SyncPayload(BaseModel):
