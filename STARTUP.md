@@ -68,6 +68,42 @@ http://localhost:3000
 | Admin | `admin@alpha.com` | `admin123` |
 | Technician | `tech@alpha.com` | `tech123` |
 
+Seeding is no longer automatic (it used to fire on every page load, which
+would silently bury real synced data under demo data). For a fresh local
+install with demo data, seed it once manually:
+
+```bash
+curl.exe -X POST http://localhost:8000/api/seed
+```
+
+If you're pulling **live data** instead (see below), skip this — logging in
+with `admin@alpha.com` / `admin123` still works, since `/api/connector/sync`
+creates that same admin account automatically on first sync.
+
+---
+
+## 🌐 Live UniFi Cloud Data (instead of demo data)
+
+1. Get a Cloud API key at [unifi.ui.com](https://unifi.ui.com) → Settings →
+   API Keys.
+2. Create a `.env` file in the project root (gitignored) with:
+   ```
+   UI_CLOUD_API_KEY=your_real_key
+   ```
+3. Run the connector alongside the backend:
+   ```bash
+   python connector.py
+   ```
+   It polls your real UniFi Cloud inventory every 15s and syncs sites,
+   devices, and status into the database — no demo seeding needed. It also
+   raises real incidents automatically when a device goes offline.
+4. **Syslog-based detection is separate and needs local network reachability**
+   — your UniFi devices push syslog via UDP to a fixed IP you configure on
+   the console, which only works if `connector.py` runs somewhere your
+   devices can actually reach (not Render/Netlify — see
+   [DEPLOYMENT.md](DEPLOYMENT.md)). Device-offline detection above doesn't
+   need this; it works anywhere with outbound internet.
+
 ---
 
 ## ✅ Test Workflow

@@ -10,3 +10,5 @@ services:
         value: 0.0.0.0
       - key: PYTHON_VERSION
         value: 3.11.9
+      - key: UI_CLOUD_API_KEY
+        sync: false # secret - set manually in the Render dashboard, not committed
