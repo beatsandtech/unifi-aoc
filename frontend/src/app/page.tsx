@@ -305,6 +305,13 @@ export default function Home() {
   const kpiAwaiting = awaitingCount;
   const kpiResolved = incidents.filter(i => i.status === "Resolved").length;
 
+  const kpiMTTR = reports?.avg_resolution_minutes != null
+    ? (reports.avg_resolution_minutes < 60 ? `${reports.avg_resolution_minutes}m` : `${(reports.avg_resolution_minutes / 60).toFixed(1)}h`)
+    : "—";
+  const kpiSuccessRate = reports?.outcome_breakdown?.total
+    ? `${Math.round((reports.outcome_breakdown.resolved / reports.outcome_breakdown.total) * 100)}%`
+    : "—";
+
   // Filtered data
   const allCustomers = Array.from(new Set(sites.map(s => s.customer_name).filter(Boolean)));
   const filteredSites = sites.filter(s => {
@@ -352,16 +359,15 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Role selector */}
-        <div className="seg" style={{ width: "100%", display: "flex" }}>
-          <label className="seg-opt" style={{ flex: 1, justifyContent: "center", cursor: "pointer" }}>
-            <input type="radio" name="role" checked={isAdmin} onChange={() => { localStorage.setItem("aoc_role", "Admin"); setUser({ ...user, role: "Admin" }); }} />
-            Admin
-          </label>
-          <label className="seg-opt" style={{ flex: 1, justifyContent: "center", cursor: "pointer" }}>
-            <input type="radio" name="role" checked={isTech} onChange={() => { localStorage.setItem("aoc_role", "Helpdesk"); setUser({ ...user, role: "Helpdesk" }); }} />
-            Technician
-          </label>
+        {/* Role badge */}
+        <div style={{
+          width: "100%", display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "6px 0", borderRadius: "var(--radius-md)",
+          background: isAdmin ? "color-mix(in srgb, var(--color-accent) 12%, transparent)" : "var(--color-surface-alt)",
+          border: "1px solid var(--color-divider)", fontSize: "12px", fontWeight: 600,
+          color: isAdmin ? accent : "var(--color-neutral-400)", letterSpacing: ".03em", textTransform: "uppercase"
+        }}>
+          {isAdmin ? "Administrator" : "Technician"}
         </div>
 
         {/* Nav buttons */}
@@ -559,9 +565,8 @@ export default function Home() {
                   { kicker: "Sites", title: kpiSitesOnline, meta: `${kpiSitesDegraded} degraded · ${kpiSitesOffline} offline` },
                   { kicker: "Open Incidents", title: kpiOpen, meta: `${kpiAwaiting} awaiting approval` },
                   { kicker: "Auto-Remediated", title: kpiResolved, meta: "verified outcomes" },
-                  { kicker: "Mean Time to Detect", title: "3m", meta: "across monitored sites" },
-                  { kicker: "Mean Time to Resolve", title: "21m", meta: "approved remediations" },
-                  { kicker: "AI Remediation Success", title: "91%", meta: "last 30 days" },
+                  { kicker: "Mean Time to Resolve", title: kpiMTTR, meta: "approved remediations" },
+                  { kicker: "AI Remediation Success", title: kpiSuccessRate, meta: `${reports?.outcome_breakdown?.resolved ?? 0} of ${reports?.outcome_breakdown?.total ?? 0} incidents` },
                 ].map((card, idx) => (
                   <div key={idx} className="card elev-sm" style={{ padding: "var(--space-3)" }}>
                     <div style={{ fontSize: "10px", letterSpacing: ".1em", textTransform: "uppercase", color: accent }}>
@@ -676,7 +681,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <table className="table">
+              <table className="table-nc">
                 <thead>
                   <tr>
                     <th>Site</th>
@@ -762,7 +767,7 @@ export default function Home() {
                 <div className="card elev-sm" style={{ marginBottom: "var(--space-4)" }}>
                   <div style={{ fontSize: "15px", fontWeight: 500 }}>Devices</div>
                   <div className="hr" style={{ margin: "var(--space-2) 0" }} />
-                  <table className="table">
+                  <table className="table-nc">
                     <thead>
                       <tr>
                         <th>Device</th>
@@ -845,7 +850,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <table className="table">
+              <table className="table-nc">
                 <thead>
                   <tr>
                     <th>Severity</th>

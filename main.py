@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, status
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, status, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -6,7 +6,10 @@ from typing import List, Dict, Any, Optional
 import uuid
 import datetime
 import random
+import os
 from pydantic import BaseModel
+
+CONNECTOR_API_KEY = os.environ.get("CONNECTOR_API_KEY", "aoc-connector-local-key")
 
 # Schema models for Auth
 class UserRegister(BaseModel):
@@ -76,6 +79,10 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     return user
 
 # Role enforcement helper check
+def verify_connector_key(x_connector_key: str = Header(...)):
+    if x_connector_key != CONNECTOR_API_KEY:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid connector API key.")
+
 def enforce_role(user: User, allowed_roles: List[str]):
     if user.role not in allowed_roles:
         raise HTTPException(
@@ -149,7 +156,14 @@ def delete_user(user_id: str, db: Session = Depends(get_db), current_user: User 
 
 # Seed database with sample MSP client topology if empty
 @app.post("/api/seed")
-def seed_data(db: Session = Depends(get_db)):
+def seed_data(db: Session = Depends(get_db), token: Optional[str] = Depends(OAuth2PasswordBearer(tokenUrl="api/auth/login", auto_error=False))):
+    if db.query(User).first():
+        if not token:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required.")
+        user = db.query(User).filter(User.id == token).first()
+        if not user:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials.")
+        enforce_role(user, ["Admin"])
     # Check if seed already run
     if db.query(Organization).first():
         return {"message": "Database already seeded."}
@@ -633,6 +647,7 @@ def simulate_incident(
     incident_type: Optional[str] = None,
     payload: Optional[Dict[str, str]] = None,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     correlation_agent = IncidentCorrelationAgent(db)
 
@@ -757,7 +772,7 @@ def simulate_incident(
         "incident": _serialize_incident(incident, site_names, site_customer, device_names),
     }
 
-@app.post("/api/connector/syslog")
+@app.post("/api/connector/syslog", dependencies=[Depends(verify_connector_key)])
 def ingest_syslog(payload: Dict[str, str], db: Session = Depends(get_db)):
     msg = payload.get("message", "").lower()
     ip = payload.get("ip", "Unknown")
@@ -792,7 +807,7 @@ class SyncPayload(BaseModel):
     sites: List[Dict[str, Any]]
     devices: List[Dict[str, Any]]
 
-@app.post("/api/connector/sync")
+@app.post("/api/connector/sync", dependencies=[Depends(verify_connector_key)])
 def sync_telemetry(payload: SyncPayload, db: Session = Depends(get_db)):
     """Receives live Cloud API telemetry and upserts sites and devices into the database."""
     # Ensure a default organization exists
@@ -926,7 +941,8 @@ def sync_telemetry(payload: SyncPayload, db: Session = Depends(get_db)):
 
 
 @app.post("/api/connector/reset")
-def reset_connector_data(db: Session = Depends(get_db)):
+def reset_connector_data(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    enforce_role(current_user, ["Admin"])
     """Wipe all connector-synced devices and sites so a fresh sync starts clean."""
     db.query(Device).delete()
     db.query(Site).delete()

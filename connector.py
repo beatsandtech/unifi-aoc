@@ -15,6 +15,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 API_URL = os.environ.get("AOC_API_URL", "http://localhost:8000/api")
 CONNECTOR_INTERVAL = int(os.environ.get("CONNECTOR_INTERVAL", "15"))
+CONNECTOR_API_KEY = os.environ.get("CONNECTOR_API_KEY", "aoc-connector-local-key")
 
 # UniFi Cloud Site Manager API Key
 UI_CLOUD_API_KEY = os.environ.get("UI_CLOUD_API_KEY", "demo_key_override_me")
@@ -108,7 +109,7 @@ def start_syslog_receiver():
             print(f"[Syslog Ingestion] Received from {addr[0]}: {msg}")
             requests.post(f"{API_URL}/connector/syslog", json={
                 "ip": addr[0], "message": msg
-            }, timeout=3)
+            }, headers={"X-Connector-Key": CONNECTOR_API_KEY}, timeout=3)
         except Exception:
             time.sleep(1)
 
@@ -193,7 +194,7 @@ def run_telemetry_loop():
             res = requests.post(f"{API_URL}/connector/sync", json={
                 "sites": synced_sites,
                 "devices": aggregated_devices
-            }, timeout=10)
+            }, headers={"X-Connector-Key": CONNECTOR_API_KEY}, timeout=10)
             if res.status_code == 200:
                 r = res.json()
                 print(f"[Connector] Synced {r.get('synced_sites', 0)} sites, {r.get('synced_devices', 0)} devices -> AOC backend.")

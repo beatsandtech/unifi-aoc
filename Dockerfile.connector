@@ -5,9 +5,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY main.py models.py agents.py run-backend.py ./
+COPY connector.py models.py ./
 COPY .env* ./
 
-EXPOSE 8000
-
-CMD ["python", "-u", "run-backend.py"]
+CMD ["python", "-u", "connector.py"]

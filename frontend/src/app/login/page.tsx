@@ -36,6 +36,7 @@ export default function Login() {
 
       const data = await res.json();
       localStorage.setItem("aoc_token", data.access_token);
+      localStorage.setItem("aoc_role", data.role || "Helpdesk");
       router.push("/");
     } catch (err: any) {
       setError(err.message || "Failed to connect to the authentication server.");

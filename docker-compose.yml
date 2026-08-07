@@ -2,10 +2,15 @@ version: '3.8'
 
 services:
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
     container_name: aoc_backend
     env_file:
       - .env
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
     ports:
       - "8000:8000"
     volumes:
@@ -13,7 +18,9 @@ services:
     restart: unless-stopped
 
   connector:
-    build: ./connector
+    build:
+      context: .
+      dockerfile: Dockerfile.connector
     container_name: aoc_connector
     env_file:
       - .env
@@ -29,7 +36,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000/api
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
     depends_on:
       - backend
     restart: unless-stopped
